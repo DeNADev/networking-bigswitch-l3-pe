@@ -5,7 +5,7 @@ This is the OpenStack Neutron ML2 Driver for Big Cloud Fabric Physical Edition.
 
 What the plugin does
 --------------------
-The plugin syncs logical routers with BCF Pysical Edition. Specifically, the plugin does as follows:
+The plugin syncs logical routers with BCF Pysical Edition. Specifically, the plugin does the following:
 
  * When a network is created in OpenStack, the plugin creates tenant interfaces and
    a segment interface and adds a static route to the system tenant.
