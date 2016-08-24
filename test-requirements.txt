@@ -1,0 +1,6 @@
+flake8
+testrepository
+oslo.config
+-e git+https://git.openstack.org/openstack/neutron.git@master#egg=neutron
+mock
+oslotest

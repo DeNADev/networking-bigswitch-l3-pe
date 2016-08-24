@@ -1,0 +1,3 @@
+build/*
+*.pyc
+networking_bigswitch_l3_pe.egg-info/
