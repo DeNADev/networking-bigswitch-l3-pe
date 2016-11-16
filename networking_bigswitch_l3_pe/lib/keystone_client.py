@@ -38,7 +38,7 @@ class KeystoneClient(object):
                 tenant_name=auth_tenant,
             )
         elif self.version == 'v3':
-            cfg.Error('keystone api v3 is not supported yet')
+            raise cfg.Error('keystone api v3 is not supported yet')
 
     def _get_api_version(self, auth_url):
         path = parse.urlparse(auth_url).path
@@ -51,5 +51,5 @@ class KeystoneClient(object):
         if self.version == 'v2':
             projects = self.keystone_client.tenants.list()
         elif self.version == 'v3':
-            cfg.Error('keystone api v3 is not supported yet')
+            raise cfg.Error('keystone api v3 is not supported yet')
         return {p.id: p.name for p in projects}
