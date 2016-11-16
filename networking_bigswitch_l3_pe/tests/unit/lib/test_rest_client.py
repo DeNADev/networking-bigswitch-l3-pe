@@ -40,7 +40,6 @@ class RestClientTestCase(base.BaseTestCase):
         mock_urlopen.return_value = self._setup_mock(200, ['[]'])
         client = self._setup_rest_client()
 
-        client._renew_session()
         ret = client._get_segment_interface('tenant_test')
         self.assertEqual([], ret)
 
