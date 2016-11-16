@@ -18,6 +18,8 @@ bcf_pe_opts = [
     cfg.StrOpt('api_url', default='https://localhost:8443/api/v1',
                help="A BCF REST API. This should be a fully qualified url "
                     "of the form (i.e. https://controller:8443/api/v1)"),
+    cfg.IntOpt('sync_interval', default=600,
+               help="Time between synchronization to BCF Controller "),
 ]
 
 
