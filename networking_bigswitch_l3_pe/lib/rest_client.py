@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import re
 import json
 import logging
 from neutron.common import exceptions
@@ -260,5 +259,13 @@ class RestClient(object):
         code, output = self.rest_call(SYSTEM_TENANT_IFS_PATH,
                                       json.dumps({}), verb='GET')
         ret = json.loads(output)
-        return [x for x in ret
-                if re.search(neutron_id, x['remote-tenant'])]
+        interfaces = []
+        for i in ret:
+            if 'remote-tenant' not in i:
+                continue
+            elems = i['remote-tenant'].rsplit('.', 1)
+            if len(elems) != 2:
+                continue
+            if elems[1] == neutron_id:
+                interfaces.append(i)
+        return interfaces
