@@ -51,6 +51,7 @@ You can configure these parameters.
     [networking_bigswitch_l3_pe]
     api_url = https://<bcf_controller>:8443/api/v1
     sync_interval = 600
+    exclude_physical_networks = physnet2
 
 The plugin uses these parameters in restproxy section.
 

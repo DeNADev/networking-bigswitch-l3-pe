@@ -19,25 +19,41 @@ from neutron import context as ncontext
 from neutron.common import exceptions
 from networking_bigswitch_l3_pe.lib.rest_client import RestClient
 from networking_bigswitch_l3_pe.lib.keystone_client import KeystoneClient
+from neutron.plugins.ml2 import models
 
 LOG = logging.getLogger(__name__)
 
 
 class Synchronizer(object):
-    def __init__(self, api_url, username, password, neutron_id, dry_run=False):
+    def __init__(self, api_url, username, password, neutron_id,
+                 exclude_physical_networks, dry_run=False):
         self.rest_client = RestClient(api_url, username, password)
         self.keystone_client = KeystoneClient()
         self.db_plugin = db_base_plugin_v2.NeutronDbPluginV2()
         self.neutron_id = neutron_id
+        self.exclude_physical_networks = exclude_physical_networks
         self.dry_run = dry_run
+        if self.dry_run:
+            LOG.info("This is dry run mode.")
         self.rest_sleep = 0.5
 
     def _get_os_projects(self):
         return self.keystone_client.get_projects()
 
+    def _get_exclude_networks(self):
+        ctx = ncontext.get_admin_context()
+        with ctx.session.begin(subtransactions=True):
+            query = (ctx.session.query(models.NetworkSegment).
+                     order_by(models.NetworkSegment.segment_index))
+            records = query.all()
+
+            return [r.network_id for r in records
+                    if r.physical_network in self.exclude_physical_networks]
+
     def _get_os_networks(self):
         ctx = ncontext.get_admin_context()
-        return self.db_plugin.get_networks(ctx)
+        ret = self.db_plugin.get_networks(ctx)
+        return ret
 
     def _get_os_subnets(self):
         ctx = ncontext.get_admin_context()
@@ -397,6 +413,15 @@ class Synchronizer(object):
         projects = self._get_os_projects()
         networks = self._get_os_networks()
         subnets = self._get_os_subnets()
+
+        exclude_networks = self._get_exclude_networks()
+        LOG.debug("exclude_networks=%(exclude_networks)s",
+                  {'exclude_networks': exclude_networks})
+        networks = [n for n in networks
+                    if n['id'] not in exclude_networks]
+        subnets = [s for s in subnets
+                   if s['network_id'] not in exclude_networks]
+
         return {
             'projects': projects,
             'networks': networks,

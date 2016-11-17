@@ -20,6 +20,9 @@ bcf_pe_opts = [
                     "of the form (i.e. https://controller:8443/api/v1)"),
     cfg.IntOpt('sync_interval', default=600,
                help="Time between synchronization to BCF Controller "),
+    cfg.ListOpt('exclude_physical_networks', default=[],
+                help="A comma separated list of physical networks which "
+                     "should not be synchronized with BCF"),
 ]
 
 
