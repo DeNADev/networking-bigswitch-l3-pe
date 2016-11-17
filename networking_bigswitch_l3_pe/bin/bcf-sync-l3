@@ -45,7 +45,7 @@ def setup_config():
 
 
 def main():
-    parser = argparse.ArgumentParser(description='bcf api cli')
+    parser = argparse.ArgumentParser(description='synchronize l3 config with BCF')
     parser.add_argument('-x', '--execute', action='store_true', default=False)
     args = parser.parse_args()
 
