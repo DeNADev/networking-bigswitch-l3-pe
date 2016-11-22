@@ -230,21 +230,11 @@ class Synchronizer(object):
                 if self._find_subnets_in_os(os, i['ip-cidr']):
                     continue
 
-                # Check if the project exists in OpenStack.
-                if self._find_project_in_os(os, tenant['name']):
-                    ret.append({
-                        'project_name': tenant['name'],
-                        'segment_name': si['segment'],
-                        'current_gateway_ip': i['ip-cidr'],
-                    })
-                else:
-                    # If doesn't exist, skip to delete the subnet.
-                    # In this case, the subnet will be deleted
-                    # by _update_tenant_cache() in bsnstacklib
-                    LOG.debug("project(%(project)s) of subnet(%(subnet)s) "
-                              "doesn't already exist in OpenStack.",
-                              {'project': tenant['name'],
-                               'subnet': i['ip-cidr']})
+                ret.append({
+                    'project_name': tenant['name'],
+                    'segment_name': si['segment'],
+                    'current_gateway_ip': i['ip-cidr'],
+                })
 
         return ret
 
@@ -254,20 +244,10 @@ class Synchronizer(object):
             if self._find_networks_in_os(os, si['segment']):
                 continue
 
-            # Check if the project exists in OpenStack.
-            if self._find_project_in_os(os, tenant['name']):
-                ret.append({
-                    'project_name': tenant['name'],
-                    'segment_name': si['segment'],
-                })
-            else:
-                # If doesn't exist, skip to delete the network.
-                # In this case, the network will be deleted
-                # by _update_tenant_cache() in bsnstacklib
-                LOG.debug("project(%(project)s) of network(%(network)s) "
-                          "doesn't already exist in OpenStack.",
-                          {'project': tenant['name'],
-                           'network': si['segment']})
+            ret.append({
+                'project_name': tenant['name'],
+                'segment_name': si['segment'],
+            })
 
         return ret
 
@@ -296,6 +276,21 @@ class Synchronizer(object):
         return subnet['gateway_ip'] + '/' + mask
 
     def _get_tenant_name(self, os, tenant_id):
+        if tenant_id not in os['projects']:
+            emsg = "tenant(%(tenant_id)s) is not found" % {
+                       'tenant_id': tenant_id}
+            LOG.debug(emsg)
+            raise exceptions.Invalid(error_message=emsg)
+
+        if not os['projects'][tenant_id]:
+            emsg = "tenant name(%(tenant_id)s) is empty" % {
+                       'tenant_id': tenant_id}
+            LOG.debug(emsg)
+            raise exceptions.Invalid(error_message=emsg)
+
+        return os['projects'][tenant_id] + '.' + self.neutron_id
+
+    def _get_tenant_id(self, os, tenant_id):
         if tenant_id not in os['projects']:
             emsg = "tenant(%(tenant_id)s) is not found" % {
                        'tenant_id': tenant_id}
@@ -357,14 +352,25 @@ class Synchronizer(object):
         tenant = next((t for t in bcf['tenants']
                        if t['name'] == tenant_name), None)
         if tenant:
-            LOG.info("tenant(%(tenant)s) still exists in BCF. "
-                     "skip to delete the system tenant interface.",
-                     {'tenant': tenant_name})
+            LOG.debug("tenant(%(tenant)s) still exists in BCF. "
+                      "skip to delete the system tenant interface.",
+                      {'tenant': tenant_name})
             return None
 
         return tenant_name
 
-    def _delete_resources(self, bcf, os):
+    def _filter_by_events(self, events, resources):
+        ret = []
+        for r in resources:
+            if next((e for e in events if e['payload'] == r), None):
+                ret.append(r)
+            else:
+                LOG.warn("There were no operations to delete it. "
+                         "Please delete it manually: %(resource)s.",
+                         {'resource': r})
+        return ret
+
+    def _delete_resources(self, bcf, os, events):
         subnets = []
         networks = []
         for t in bcf['tenants']:
@@ -381,23 +387,19 @@ class Synchronizer(object):
             if ret:
                 networks.extend(ret)
 
-        interfaces = []
-        for i in bcf['system_tenant_interfaces']:
-            ret = self._check_project_in_os(os, bcf, i['remote-tenant'])
-            if ret:
-                interfaces.append(i['remote-tenant'])
+        if not (events is None):
+            # Delete only networks/subnets which were deleted by users.
+            subnets = self._filter_by_events(events, subnets)
+            networks = self._filter_by_events(events, networks)
 
         subnets = self._delete_subnets_in_bcf(subnets)
         networks = self._delete_networks_in_bcf(networks)
-        interfaces = self._delete_system_tenant_interfaces(interfaces)
 
         ret = {}
         if len(subnets) > 0:
             ret['subnets'] = subnets
         if len(networks) > 0:
             ret['networks'] = networks
-        if len(interfaces) > 0:
-            ret['system_tenant_interfaces'] = interfaces
         return ret
 
     def _get_bcf_resources(self):
@@ -428,8 +430,10 @@ class Synchronizer(object):
             'subnets': subnets,
         }
 
-    def synchronize(self):
-        LOG.info("Start synchronization")
+    def synchronize(self, events=None):
+        LOG.info("Start synchronization: events=%(events)s",
+                 {'events': events})
+
         self.rest_client.renew_session()
 
         bcf = self._get_bcf_resources()
@@ -437,17 +441,19 @@ class Synchronizer(object):
 
         ret = {}
         added = self._add_resources(os, bcf)
-        deleted = self._delete_resources(bcf, os)
+        deleted = self._delete_resources(bcf, os, events)
 
         if len(added) > 0:
             ret['added'] = added
         if len(deleted) > 0:
             ret['deleted'] = deleted
-        if not self.dry_run:
-            if ret:
-                LOG.info("Finished synchronization: "
-                         "synchronized resources: %(resource)s.",
-                         {'resource': ret})
-            else:
-                LOG.info("Finished synchronization: Already synchronized.")
+        if ret:
+            LOG.info("Finished synchronization%(dry_run)s: "
+                     "synchronized resources: %(resource)s.",
+                     {'resource': ret,
+                      'dry_run': '(dry run mode)' if self.dry_run else ''})
+        else:
+            LOG.info("Finished synchronization%(dry_run)s: "
+                     "Already synchronized.",
+                     {'dry_run': '(dry run mode)' if self.dry_run else ''})
         return ret
