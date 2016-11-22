@@ -256,13 +256,13 @@ class Synchronizer(object):
             emsg = "subnet(%(subnet_id)s) doensn't have gateway_ip" % {
                        'subnet_id': subnet['id']}
             LOG.debug(emsg)
-            raise exceptions.Invalid(error_message=emsg)
+            raise exceptions.Invalid(message=emsg)
 
         if ('cidr' not in subnet) or (not subnet['cidr']):
             emsg = "subnet(%(subnet_id)s) doensn't have cidr" % {
                        'subnet_id': subnet['id']}
             LOG.debug(emsg)
-            raise exceptions.Invalid(error_message=emsg)
+            raise exceptions.Invalid(message=emsg)
 
         ip, mask = subnet['cidr'].split('/')
         if not mask:
@@ -271,7 +271,7 @@ class Synchronizer(object):
                        'cidr': subnet['cidr'],
                        'subnet_id': subnet['id']}
             LOG.debug(emsg)
-            raise exceptions.Invalid(error_message=emsg)
+            raise exceptions.Invalid(message=emsg)
 
         return subnet['gateway_ip'] + '/' + mask
 
@@ -280,13 +280,13 @@ class Synchronizer(object):
             emsg = "tenant(%(tenant_id)s) is not found" % {
                        'tenant_id': tenant_id}
             LOG.debug(emsg)
-            raise exceptions.Invalid(error_message=emsg)
+            raise exceptions.Invalid(message=emsg)
 
         if not os['projects'][tenant_id]:
             emsg = "tenant name(%(tenant_id)s) is empty" % {
                        'tenant_id': tenant_id}
             LOG.debug(emsg)
-            raise exceptions.Invalid(error_message=emsg)
+            raise exceptions.Invalid(message=emsg)
 
         return os['projects'][tenant_id] + '.' + self.neutron_id
 
@@ -314,7 +314,7 @@ class Synchronizer(object):
             emsg = "network(%(network_id)s) is not found" % {
                        'network_id': network_id}
             LOG.debug(emsg)
-            raise exceptions.Invalid(error_message=emsg)
+            raise exceptions.Invalid(message=emsg)
 
     def _add_resources(self, os, bcf):
         networks = []
