@@ -13,13 +13,13 @@
 #    under the License.
 
 import logging
-import time
-from neutron.db import db_base_plugin_v2
-from neutron import context as ncontext
-from neutron.common import exceptions
-from networking_bigswitch_l3_pe.lib.rest_client import RestClient
 from networking_bigswitch_l3_pe.lib.keystone_client import KeystoneClient
+from networking_bigswitch_l3_pe.lib.rest_client import RestClient
+from neutron.common import exceptions
+from neutron import context as ncontext
+from neutron.db import db_base_plugin_v2
 from neutron.plugins.ml2 import models
+import time
 
 LOG = logging.getLogger(__name__)
 
@@ -254,13 +254,13 @@ class Synchronizer(object):
     def _get_gateway_ip(self, subnet):
         if ('gateway_ip' not in subnet) or (not subnet['gateway_ip']):
             emsg = "subnet(%(subnet_id)s) doensn't have gateway_ip" % {
-                       'subnet_id': subnet['id']}
+                   'subnet_id': subnet['id']}
             LOG.debug(emsg)
             raise exceptions.Invalid(message=emsg)
 
         if ('cidr' not in subnet) or (not subnet['cidr']):
             emsg = "subnet(%(subnet_id)s) doensn't have cidr" % {
-                       'subnet_id': subnet['id']}
+                   'subnet_id': subnet['id']}
             LOG.debug(emsg)
             raise exceptions.Invalid(message=emsg)
 
@@ -278,13 +278,13 @@ class Synchronizer(object):
     def _get_tenant_name(self, os, tenant_id):
         if tenant_id not in os['projects']:
             emsg = "tenant(%(tenant_id)s) is not found" % {
-                       'tenant_id': tenant_id}
+                   'tenant_id': tenant_id}
             LOG.debug(emsg)
             raise exceptions.Invalid(message=emsg)
 
         if not os['projects'][tenant_id]:
             emsg = "tenant name(%(tenant_id)s) is empty" % {
-                       'tenant_id': tenant_id}
+                   'tenant_id': tenant_id}
             LOG.debug(emsg)
             raise exceptions.Invalid(message=emsg)
 
@@ -293,13 +293,13 @@ class Synchronizer(object):
     def _get_tenant_id(self, os, tenant_id):
         if tenant_id not in os['projects']:
             emsg = "tenant(%(tenant_id)s) is not found" % {
-                       'tenant_id': tenant_id}
+                   'tenant_id': tenant_id}
             LOG.debug(emsg)
             raise exceptions.Invalid(error_message=emsg)
 
         if not os['projects'][tenant_id]:
             emsg = "tenant name(%(tenant_id)s) is empty" % {
-                       'tenant_id': tenant_id}
+                   'tenant_id': tenant_id}
             LOG.debug(emsg)
             raise exceptions.Invalid(error_message=emsg)
 
@@ -312,7 +312,7 @@ class Synchronizer(object):
             return network
         else:
             emsg = "network(%(network_id)s) is not found" % {
-                       'network_id': network_id}
+                   'network_id': network_id}
             LOG.debug(emsg)
             raise exceptions.Invalid(message=emsg)
 

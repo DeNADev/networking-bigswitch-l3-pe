@@ -13,19 +13,19 @@
 #    under the License.
 
 import bsnstacklib.plugins.bigswitch.config
-import logging
 import eventlet
-from neutron.plugins.ml2.driver_api import MechanismDriver
-from neutron.db import db_base_plugin_v2
+import logging
 import networking_bigswitch_l3_pe.lib.config
-from networking_bigswitch_l3_pe.lib.synchronizer import Synchronizer
-from networking_bigswitch_l3_pe.lib.event import EventWatcher
-from networking_bigswitch_l3_pe.lib.event import EventNotifier
 from networking_bigswitch_l3_pe.lib.event import EVENT_NETWORK_DELETE
 from networking_bigswitch_l3_pe.lib.event import EVENT_SUBNET_DELETE
+from networking_bigswitch_l3_pe.lib.event import EventNotifier
+from networking_bigswitch_l3_pe.lib.event import EventWatcher
 from networking_bigswitch_l3_pe.lib.keystone_client import KeystoneClient
-from oslo_config import cfg
+from networking_bigswitch_l3_pe.lib.synchronizer import Synchronizer
 from neutron import context as ncontext
+from neutron.db import db_base_plugin_v2
+from neutron.plugins.ml2.driver_api import MechanismDriver
+from oslo_config import cfg
 
 LOG = logging.getLogger(__name__)
 

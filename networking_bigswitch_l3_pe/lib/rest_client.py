@@ -14,8 +14,8 @@
 
 import json
 import logging
-from neutron.common import exceptions
 from networking_bigswitch_l3_pe.lib.exceptions import BCFRestError
+from neutron.common import exceptions
 import urllib
 import urllib2
 LOG = logging.getLogger(__name__)

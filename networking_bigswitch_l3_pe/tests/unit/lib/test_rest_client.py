@@ -14,10 +14,10 @@
 
 from mock import Mock
 from mock import patch
-from neutron.tests import base
 import networking_bigswitch_l3_pe.lib.config
 from networking_bigswitch_l3_pe.lib.rest_client import BCFRestError
 from networking_bigswitch_l3_pe.lib.rest_client import RestClient
+from neutron.tests import base
 
 
 class RestClientTestCase(base.BaseTestCase):
