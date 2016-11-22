@@ -19,7 +19,7 @@ periodically does the following:
         interface tenant system
     tenant system
       logical-router
-        interface tenant admin.openstack
+        interface tenant project_example.openstack
    ```
    * When adding a subnet, the plugin adds the following configurations.
    ```
@@ -40,6 +40,26 @@ You can install the plugin by executing the following command.
 
 How to use
 ----------
+Before enabling the plugin in neutron-server, You can execute bcf-sync-l3
+command to check what the plugin will do.
+
+    $ cd /path/to/networking_bigswitch_l3_pe
+    # This is dry run mode. You can check what bcf-sync-l3 will do.
+    $ sudo PYTHONPATH=.. ./bin/bcf-sync-l3
+    No handlers could be found for logger "oslo_config.cfg"
+    2016-11-22 17:38:38,388 - networking_bigswitch_l3_pe.lib.synchronizer - INFO - This is dry run mode.
+    2016-11-22 17:38:38,388 - networking_bigswitch_l3_pe.lib.synchronizer - INFO - Start synchronization: events=None
+    2016-11-22 17:38:38,596 - networking_bigswitch_l3_pe.lib.synchronizer - DEBUG - exclude_networks=[]
+    2016-11-22 17:38:38,596 - networking_bigswitch_l3_pe.lib.synchronizer - INFO - Adding networks: [{'project_name': u'project_example.openstack', 'segment_name': u'net_example'}]
+    2016-11-22 17:38:38,597 - networking_bigswitch_l3_pe.lib.synchronizer - INFO - Finished synchronization(dry run mode): synchronized resources: {'added': {'network': [{'project_name': u'project_example.openstack', 'segment_name': u'net_example'}]}}.
+    # If there is no problem, You can run bcf-sync-l3 in execution mode.
+    $ sudo PYTHONPATH=.. ./bin/bcf-sync-l3  -x
+    No handlers could be found for logger "oslo_config.cfg"
+    2016-11-22 17:38:42,529 - networking_bigswitch_l3_pe.lib.synchronizer - INFO - Start synchronization: events=None
+    2016-11-22 17:38:42,724 - networking_bigswitch_l3_pe.lib.synchronizer - DEBUG - exclude_networks=[]
+    2016-11-22 17:38:42,725 - networking_bigswitch_l3_pe.lib.synchronizer - INFO - Adding networks: [{'project_name': u'project_example.openstack', 'segment_name': u'net_example'}]
+    2016-11-22 17:38:43,287 - networking_bigswitch_l3_pe.lib.synchronizer - INFO - Finished synchronization: synchronized resources: {'added': {'network': [{'project_name': u'project_example.openstack', 'segment_name': u'net_example'}]}}.
+
 You can enable the plugin as the Neutron mechanism_drivers with bsn_ml2 plugin
 in ```/etc/neutron/plugins/ml2/ml2_conf.ini```.
 
@@ -56,5 +76,5 @@ You can configure these parameters.
 The plugin uses these parameters in restproxy section.
 
     [restproxy]
-    server_auth = admin:password
+    server_auth = user:password
     neutron_id = neutron_name
