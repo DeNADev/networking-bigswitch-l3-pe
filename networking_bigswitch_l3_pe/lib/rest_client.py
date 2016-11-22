@@ -14,8 +14,8 @@
 
 import json
 import logging
-from neutron.common import exceptions
 from networking_bigswitch_l3_pe.lib.exceptions import BCFRestError
+from neutron.common import exceptions
 import urllib
 import urllib2
 LOG = logging.getLogger(__name__)
@@ -43,6 +43,13 @@ IP_CIDR_PATH =\
 AAA_SESSION_PATH =\
     '/data/controller/core/aaa' +\
     '/session[auth-token="{session}"]'
+TENANTS_PATH =\
+    BASE_PATH +\
+    '/tenant[origination="{neutron_id}"]'
+SYSTEM_TENANT_IFS_PATH =\
+    BASE_PATH +\
+    '/tenant[name="system"]/logical-router/tenant-interface'
+LOG_STRING_LEN = 512
 
 
 class RestClient(object):
@@ -51,8 +58,9 @@ class RestClient(object):
         self.username = username
         self.password = password
         self.session_cookie = None
+        self.renew_session()
 
-    def _renew_session(self):
+    def renew_session(self):
         if self.session_cookie:
             self._destruct_session(self.session_cookie)
 
@@ -89,8 +97,11 @@ class RestClient(object):
         response = urllib2.urlopen(request)
         code = response.code
         result = response.read()
+        log_result = result
+        if len(result) > LOG_STRING_LEN:
+            log_result = result.replace("\n", "")[:LOG_STRING_LEN] + " ..."
         LOG.debug("code:%(code)s result:%(result)s",
-                  {'code': code, 'result': result})
+                  {'code': code, 'result': log_result})
         if code not in range(200, 300):
             raise BCFRestError(code=code, result=result,
                                method=verb, url=url, data=data)
@@ -111,8 +122,6 @@ class RestClient(object):
                        'segment_name': segment_name}
             LOG.debug(emsg)
             raise exceptions.InvalidInput(error_message=emsg)
-
-        self._renew_session()
 
         # create tenant-interface
         path = TENANT_IF_PATH.format(tenant='system',
@@ -152,8 +161,6 @@ class RestClient(object):
             LOG.debug(emsg)
             raise exceptions.InvalidInput(error_message=emsg)
 
-        self._renew_session()
-
         if not orig_ip_cidr:
             orig_ip_cidr = current_ip_cidr
 
@@ -179,8 +186,6 @@ class RestClient(object):
                        'segment_name': segment_name}
             LOG.debug(emsg)
             raise exceptions.InvalidInput(error_message=emsg)
-
-        self._renew_session()
 
         # delete segment interface
         path = SEGMENT_IF_PATH.format(tenant=tenant_name, segment=segment_name)
@@ -221,8 +226,6 @@ class RestClient(object):
             LOG.debug(emsg)
             raise exceptions.InvalidInput(error_message=emsg)
 
-        self._renew_session()
-
         # delete segment interface
         path = IP_CIDR_PATH.format(tenant=tenant_name,
                                    segment=segment_name,
@@ -230,3 +233,39 @@ class RestClient(object):
         self.rest_call(path, json.dumps({}), verb='DELETE')
 
         return True
+
+    def delete_system_tenant_interface(self, tenant_name):
+        if not tenant_name:
+            emsg = "Invalid parameter for delete_system_tenant_interface: "\
+                   "tenant_name=%(tenant_name)s" % {
+                       'tenant_name': tenant_name}
+            LOG.debug(emsg)
+            raise exceptions.InvalidInput(error_message=emsg)
+
+        # delete tenant-interface
+        path = TENANT_IF_PATH.format(tenant='system',
+                                     remote=tenant_name)
+        self.rest_call(path, json.dumps({}), verb='DELETE')
+
+        return True
+
+    def get_tenants(self, neutron_id):
+        path = TENANTS_PATH.format(neutron_id=neutron_id)
+        code, output = self.rest_call(path, json.dumps({}), verb='GET')
+        ret = json.loads(output)
+        return ret
+
+    def get_system_tenant_interfaces(self, neutron_id):
+        code, output = self.rest_call(SYSTEM_TENANT_IFS_PATH,
+                                      json.dumps({}), verb='GET')
+        ret = json.loads(output)
+        interfaces = []
+        for i in ret:
+            if 'remote-tenant' not in i:
+                continue
+            elems = i['remote-tenant'].rsplit('.', 1)
+            if len(elems) != 2:
+                continue
+            if elems[1] == neutron_id:
+                interfaces.append(i)
+        return interfaces

@@ -1,3 +1,7 @@
+enum
+configparser
+extras
+pytz
 flake8
 testrepository
 oslo.config

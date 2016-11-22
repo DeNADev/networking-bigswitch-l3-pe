@@ -14,10 +14,10 @@
 
 from mock import Mock
 from mock import patch
-from neutron.tests import base
 import networking_bigswitch_l3_pe.lib.config
 from networking_bigswitch_l3_pe.lib.rest_client import BCFRestError
 from networking_bigswitch_l3_pe.lib.rest_client import RestClient
+from neutron.tests import base
 
 
 class RestClientTestCase(base.BaseTestCase):
@@ -40,7 +40,6 @@ class RestClientTestCase(base.BaseTestCase):
         mock_urlopen.return_value = self._setup_mock(200, ['[]'])
         client = self._setup_rest_client()
 
-        client._renew_session()
         ret = client._get_segment_interface('tenant_test')
         self.assertEqual([], ret)
 

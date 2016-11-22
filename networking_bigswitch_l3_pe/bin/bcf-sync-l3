@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# Copyright 2016 DeNA Co., Ltd.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+import logging
+import argparse
+from oslo_config import cfg
+from neutron.common import config
+import keystoneclient.middleware.auth_token
+import bsnstacklib.plugins.bigswitch.config
+import networking_bigswitch_l3_pe.lib.config
+from networking_bigswitch_l3_pe.lib.synchronizer import Synchronizer
+
+LOG = logging.getLogger('networking_bigswitch_l3_pe.lib.synchronizer')
+
+
+def enable_stdout_log(logger):
+    import sys
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+
+def setup_config():
+    bsnstacklib.plugins.bigswitch.config.register_config()
+    networking_bigswitch_l3_pe.lib.config.register_config()
+    config.init(['--config-file=/etc/neutron/neutron.conf',
+                 '--config-file=/etc/neutron/plugins/ml2/ml2_conf.ini'])
+
+
+def main():
+    parser = argparse.ArgumentParser(description='synchronize l3 config with BCF')
+    parser.add_argument('-x', '--execute', action='store_true', default=False)
+    args = parser.parse_args()
+
+    enable_stdout_log(LOG)
+    # XXX: No handlers could be found for logger "oslo_config.cfg"
+    setup_config()
+
+    api_url = cfg.CONF.networking_bigswitch_l3_pe.api_url
+    username, password = cfg.CONF.RESTPROXY.server_auth.split(':')
+    neutron_id = cfg.CONF.RESTPROXY.neutron_id
+    exclude_physical_networks = \
+        cfg.CONF.networking_bigswitch_l3_pe.exclude_physical_networks
+    sync = Synchronizer(api_url, username, password, neutron_id,
+                        exclude_physical_networks, dry_run=(not args.execute))
+    sync.synchronize()
+
+if __name__ == '__main__':
+    main()

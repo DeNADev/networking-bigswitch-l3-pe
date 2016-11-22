@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+""" bcf api cli
+# GET
+$ ./bcf-api /data/controller/applications/bcf/tenant
+$ ./bcf-api /data/controller/applications/bcf/tenant[name=\"system\"]
+
+# PUT with -d option
+$ ./bcf-api /data/controller/applications/bcf/tenant[name=\"system\"]/\
+  logical-router/policy-list[name=\"policy_test02\"] \
+  -m PUT -d '{"name": "policy_test02"}'
+# PUT with -j option
+$ cat policy_test02.json
+{ "name" : "policy_test02" }
+$ ./bcf-api /data/controller/applications/bcf/tenant[name=\"system\"]/\
+  logical-router/policy-list[name=\"policy_test02\"] \
+  -m PUT -j policy_test02.json
+
+# PATCH
+$ ./bcf-api /data/controller/applications/bcf/tenant[name=\"system\"]/\
+  logical-router \
+  -m PATCH -d '{"inound-policy": "policy_test02"}'
+
+# DELETE
+$ ./bcf-api /data/controller/applications/bcf/tenant[name=\"system\"]/\
+  logical-router/policy-list[name=\"policy_test02\"] -m DELETE
+"""
+
+import json
+import argparse
+from oslo_config import cfg
+from neutron.common import config
+import bsnstacklib.plugins.bigswitch.config
+import networking_bigswitch_l3_pe.lib.config
+from networking_bigswitch_l3_pe.lib.rest_client import RestClient
+import inspect
+
+
+def setup_config():
+    bsnstacklib.plugins.bigswitch.config.register_config()
+    networking_bigswitch_l3_pe.lib.config.register_config()
+    config.init(['--config-file=/etc/neutron/neutron.conf',
+                 '--config-file=/etc/neutron/plugins/ml2/ml2_conf.ini'])
+
+
+def main():
+    parser = argparse.ArgumentParser(description='bcf api cli')
+    parser.add_argument('uri')  # like 'core/version/appliance'
+    parser.add_argument('-m', '--method', default='GET')
+    parser.add_argument('-d', '--data', default='{}')
+    parser.add_argument('-j', '--json', default='')
+    parser.add_argument('-p', '--param', default=None)
+    parser.add_argument('-v', '--verbose', action='store_true', default=False)
+    args = parser.parse_args()
+
+    setup_config()
+
+    api_url = cfg.CONF.networking_bigswitch_l3_pe.api_url
+    username, password = cfg.CONF.RESTPROXY.server_auth.split(':')
+    client = RestClient(api_url, username, password)
+
+    try:
+        if args.json:
+            f = open(args.json, 'r')
+            data = json.dumps(json.load(f))
+        else:
+            data = args.data
+        uri = args.uri
+        verb = args.method
+        param = args.param
+        code, output = client.rest_call(uri, data, verb=verb, param=param)
+        print output
+    except Exception as e:
+        print inspect.getmembers(e)
+
+if __name__ == '__main__':
+    main()
