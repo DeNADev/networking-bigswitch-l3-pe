@@ -12,7 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import bsnstacklib.plugins.bigswitch.config
+try:
+    import networking_bigswitch.plugins.bigswitch.config as bigswitch_config
+except ImportError:
+    import bsnstacklib.plugins.bigswitch.config as bigswitch_config
 import eventlet
 import logging
 import networking_bigswitch_l3_pe.lib.config
@@ -33,7 +36,7 @@ LOG = logging.getLogger(__name__)
 class BCFPhysicalEditionMechanismDriver(MechanismDriver):
 
     def __init__(self):
-        bsnstacklib.plugins.bigswitch.config.register_config()
+        bigswitch_config.register_config()
         networking_bigswitch_l3_pe.lib.config.register_config()
 
         api_url = cfg.CONF.networking_bigswitch_l3_pe.api_url
